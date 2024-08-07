@@ -100,7 +100,7 @@ int main() {
 	glGenBuffers(1, &quadVBO);
 
 	// texture = funcs::TextureFromFile("container2.png", "D:");
-	texture2 = funcs::TextureFromFile("earthmap.jpg", "D:");
+	texture2 = funcs::TextureFromFile("earthmap.jpg", "textures/");
 	skboxTexture = funcs::loadCubeMap(faces);
 
 	glGenVertexArrays(1, &quadVAO);
