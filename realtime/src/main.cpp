@@ -27,51 +27,6 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos);
 
 
 
-float vertices[] = {
-	// positions          // texture Coords
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-
 
 float quadVertices[] = {
     -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, 
@@ -84,29 +39,9 @@ float quadVertices[] = {
 };
 
 
-unsigned int indicies[] = {
-	0, 1, 2,
-	0, 2, 3
-};
 
-glm::vec3 cubePositions[] = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
-};
-
-
-
-unsigned int cubeVBO, cubeVAO, quadVBO, quadVAO;
-unsigned int texture, texture2, skboxTexture,
-grassTexture, fbtexture;
+unsigned int quadVBO, quadVAO;
+unsigned int texture2, skboxTexture;
 float dt = 0.007f;
 float lastTime = NULL;
 
@@ -120,12 +55,12 @@ const int FROM_TEXTURE = 0x01;
 const int FROM_COLOR   = 0x02;
 
 std::vector<std::string> faces{
-	"D:/faces/right.jpg",
-	"D:/faces/left.jpg",
-	"D:/faces/top.jpg",
-	"D:/faces/bottom.jpg",
-	"D:/faces/front.jpg",
-	"D:/faces/back.jpg"
+	"textures/faces/right.jpg",
+	"textures/faces/left.jpg",
+	"textures/faces/top.jpg",
+	"textures/faces/bottom.jpg",
+	"textures/faces/front.jpg",
+	"textures/faces/back.jpg"
 };
 
 template <typename T>
@@ -155,21 +90,6 @@ int main() {
 		return -1;
 	}
 
-	Mesh sphere = funcs::genSphere();
-
-	Shader myshdr{ 
-	 "shaders/cvert.glsl",
-	 "shaders/cfrag.glsl" };
-
-	Shader myshdr2{ 
-	 "shaders/mvshader.glsl",
-	 "shaders/mfshader.glsl" };
-
-	 Shader myshdr3{
-		"shaders/v.glsl",
-		"shaders/f.glsl"
-	 };
-
 	 Shader rayShdr{
 		"shaders/rayt-shader.glsl",
 		"shaders/rayf.glsl"
@@ -177,31 +97,13 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	glGenBuffers(1, &cubeVBO);
 	glGenBuffers(1, &quadVBO);
 
-	texture = funcs::TextureFromFile("container2.png", "D:");
+	// texture = funcs::TextureFromFile("container2.png", "D:");
 	texture2 = funcs::TextureFromFile("earthmap.jpg", "D:");
 	skboxTexture = funcs::loadCubeMap(faces);
 
-	glGenVertexArrays(1, &cubeVAO);
 	glGenVertexArrays(1, &quadVAO);
-
-	glBindVertexArray(cubeVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	//vpos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	//tcoord
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
 
 	glBindVertexArray(quadVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
@@ -213,13 +115,12 @@ int main() {
 	// glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(2 * sizeof(float)));
 	// glEnableVertexAttribArray(1);
 
-// Position attribute (location = 0, 2 floats for x and y)
-glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
-// Color attribute (location = 1, 3 floats for r, g, b)
-glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
-glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -275,8 +176,6 @@ glEnableVertexAttribArray(1);
 			);
 		}
 	}
-	myshdr.use();
-	myshdr.setInt("texture_diff1", 0);
 
 	rayShdr.use();
 	rayShdr.setInt("numSpheres", 52);
@@ -339,7 +238,9 @@ glEnableVertexAttribArray(1);
 	
 	rayShdr.setVec3("camPos", cam.position);
 	rayShdr.setMatrix("invProjMat", invProj);
-	rayShdr.setMatrix("invViewMat", invView);
+	cam.position = glm::vec3(0.0f, 10.0f, 25.0f);
+	cam.incPitch(-25.0f);
+	// rayShdr.setMatrix("invViewMat", invView);
 
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
