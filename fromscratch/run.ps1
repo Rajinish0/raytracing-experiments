@@ -1,5 +1,3 @@
-#!/bin/bash
-
 g++ main.cpp -o ./main 
 
 if ($LASTEXITCODE -eq 0){
