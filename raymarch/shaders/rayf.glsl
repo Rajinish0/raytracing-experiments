@@ -42,6 +42,7 @@ uniform int numSpheres;
 uniform Sphere mySphere[MAX_SPHERES];
 
 const vec3 lightPos = vec3(-1.0f, 7.0f, 2.0f);
+const float inf = 100000.0f;
 
 
 bool rayIntersectsSphere(Ray r, Sphere sp){
@@ -133,8 +134,8 @@ vec3 gRayDir(){
 
     vec2 coords = gl_FragCoord.xy;
     //float aspRatio = 800.0f/600.0f;
-    float px = (2 * ((coords.x + 0.5)/800.0f) - 1);// * (sqrt(2) / 2.0f) * aspRatio;
-    float py = (2*((coords.y + 0.5)/600.0f) - 1);// * sqrt(2)/2.0f;
+    float px = (2 * ((coords.x + 0.5 )/800.0f) - 1);// * (sqrt(2) / 2.0f) * aspRatio;
+    float py = (2*((coords.y + 0.5 )/600.0f) - 1);// * sqrt(2)/2.0f;
     vec3 dir = (invProjMat*vec4(px, py, 0, 1)).xyz;
     vec4 rayDir = invViewMat*vec4(dir.x, dir.y, -1.0, 0.0);
     return normalize(rayDir.xyz);
@@ -220,6 +221,13 @@ float smin( float a, float b, float k )
     return -k*log2(r);
 }
 
+float smin2( float a, float b, float k )
+{
+    k *= 4.0;
+    float h = max( k-abs(a-b), 0.0 )/k;
+    return min(a,b) - h*h*k*(1.0/4.0);
+}
+
 float sdf_sp(Sphere sp, vec3 pos){
     return length(sp.pos-pos) - sp.radius;
 }
@@ -231,16 +239,26 @@ float sdTorus( vec3 p, vec2 t )
 }
 
 
+// float sdf(vec3 pos){
+//     Sphere sp = mySphere[0];
+//     Sphere sp2 = mySphere[1];
+//     float displacement = sin(2*pos.x) * sin(2*pos.y) * sin(2*pos.z) * 0.25;
+//     vec3 p = pos - sp.pos;
+//     float t = sdTorus(p, vec2(5.0, 5.0));
+//     return smin2(
+//             t + displacement,
+//             sdf_sp(sp2, pos),
+//             5.0f
+//             );
+// }
+
+
 float sdf(vec3 pos){
-    Sphere sp = mySphere[0];
-    Sphere sp2 = mySphere[1];
-    float displacement = sin(2*pos.x) * sin(2*pos.y) * sin(2*pos.z) * 0.25;
-    // vec3 p = pos - sp.pos;
-    // float t = sdTorus(p, vec2(4.0, 5.0));
-    return smin(sdf_sp(sp, pos) + displacement,
-                sdf_sp(sp2, pos),
-                3.0f
-                );
+    float mm = inf;
+    for (int i =0; i < 10; ++i){
+        mm = smin2(mm, sdf_sp(mySphere[i], pos), 5.0f);
+    }
+    return mm;
 }
 
 vec3 calcNormal(vec3 pos){
@@ -274,7 +292,7 @@ vec3 Trace(Ray r){
             return col * diff + vec3(0.5f) * spec + col * vec3(0.1);
             // return HitRecord(col * diff + vec3(1.0) * spec, normal);
         }
-        
+
         r0 += r.direc * d;
         total += d;
 

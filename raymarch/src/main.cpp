@@ -73,6 +73,8 @@ T randNum(T min, T max){
 
 Camera cam;
 
+glm::vec3 lightPos = glm::vec3(-1.0f, 7.0f, 2.0f);
+
 
 int main() {
 	// stbi_set_flip_vertically_on_load(true);
@@ -238,6 +240,7 @@ int main() {
 	
 	rayShdr.setVec3("camPos", cam.position);
 	rayShdr.setMatrix("invProjMat", invProj);
+	// rayShdr.setVec3("lightPos", lightPos);
 	cam.position = glm::vec3(0.0f, 10.0f, 25.0f);
 	cam.incPitch(-25.0f);
 	// rayShdr.setMatrix("invViewMat", invView);
@@ -269,6 +272,17 @@ int main() {
 		rayShdr.setMatrix("sphereModel", glm::mat4(1.0f));
 		// rayShdr.setMatrix("sphereModel", (glm::rotate(glm::mat4(1.0f), ang*10, glm::vec3(0.0f, 1.0f, 0.0f))));
 		rayShdr.setMatrix("invViewMat", glm::inverse(view) );
+		// glm::mat4 rot = glm::rotate(
+		// 						glm::mat4(1.0f),
+		// 						(float)glfwGetTime() * 2.0f,
+		// 						glm::vec3(1.0f, 0.0f, 0.0f)
+		// 					);
+
+		// rayShdr.setVec3("lightPos", 
+		// 				glm::vec3(
+		// 					rot * glm::vec4(lightPos, 1.0) 
+		// 				)
+		// 			);
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
