@@ -41,14 +41,23 @@ float quadVertices[] = {
      1.0f,  1.0f, 1.0f, 1.0f, 1.0f 
 };
 
-float planeVerts[] = {
-	-1.0f, -1.0f,
-	-1.0f,  1.0f, 
-	 1.0f, -1.0f, 
+// float planeVerts[] = {
+// 	-1.0f, -1.0f, 0.0f, 0.0f,
+// 	-1.0f,  1.0f, 0.0f, 1.0f,
+// 	 1.0f, -1.0f, 1.0f, 0.0f,
 
-	-1.0f,  1.0f, 
-	 1.0f, -1.0f, 
-	 1.0f,  1.0f
+// 	-1.0f,  1.0f, 0.0f, 1.0f,
+// 	 1.0f, -1.0f, 1.0f, 0.0f,
+// 	 1.0f,  1.0f, 1.0f, 1.0f
+// };
+
+float planeVerts[]{
+	-1.0f, -1.0f, 0.0f, 0.0f,
+	 1.0f, -1.0f, 1.0f, 0.0f,
+	 1.0f,  1.0f, 1.0f, 1.0f,
+	 1.0f,  1.0f, 1.0f, 1.0f,
+	-1.0f,  1.0f, 0.0f, 1.0f,
+	-1.0f, -1.0f, 0.0f, 0.0f
 };
 
 
@@ -247,8 +256,13 @@ int main() {
 
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVerts), planeVerts, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -308,8 +322,8 @@ int main() {
 
 	quadShdr.use();
 	quadShdr.setVec3("camPos", cam.position);
-	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 1.5f, 0.0f));
-	quadShdr.setVec3("bounding_rect.dims", glm::vec3(20.0f, 1.0f, 20.0f));
+	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 2.5f, 0.0f));
+	quadShdr.setVec3("bounding_rect.dims", glm::vec3(100.0f, 50.0f, 100.0f));
 	quadShdr.setFloat("near", near);
 	quadShdr.setFloat("far", far);
 	quadShdr.setMatrix("invProjMat", glm::inverse(proj));
@@ -317,6 +331,8 @@ int main() {
 	glm::vec3 lightPos(3.0f, 2.0f, 0.0f);
 	fbo.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f));
 	GLuint ntId = funcs::genWorleyNoise(50, 50, 50);
+	GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
+	GLuint detailTextureId = funcs::loadDetailTexture("low_res.raw");
 
 	glm::mat4 cubeModel = glm::translate(
 		glm::mat4(1.0f),
@@ -346,6 +362,10 @@ int main() {
 		planeShdr.setMatrix("proj", proj);
 		planeShdr.setMatrix("view", view);
 		planeShdr.setMatrix("model", planeModel);
+		planeShdr.setInt("myTexture", 0);
+
+		glActiveTexture(0);
+		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
 
 		glBindVertexArray(planeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -411,10 +431,16 @@ int main() {
 		
 
 		quadShdr.setInt("texture_clouds", 2);
+		quadShdr.setInt("weather_data", 3);
+		quadShdr.setInt("detailTexture", 4);
 		quadShdr.setFloat("densityThreshold", densityThreshold);
 		quadShdr.setFloat("scale", scale);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_3D, ntId);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_3D, detailTextureId);
 		fbo.draw(quadShdr);
 
 		// plane.draw(quadShdr, 0);

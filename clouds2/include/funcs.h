@@ -17,6 +17,8 @@ namespace funcs {
 		return val;
 	}
 	GLuint genWorleyNoise(unsigned int width, unsigned int height, unsigned int breadth, unsigned int num_tiles = 10);
+	GLuint loadWeatherData(std::string fname);
+	GLuint loadDetailTexture(std::string fname);
 }
 
 #endif
