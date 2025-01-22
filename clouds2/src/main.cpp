@@ -113,8 +113,10 @@ unsigned int cubeIndices[] = {
 };
 
 
-float densityThreshold = 0.7f;
-float scale 		   = 0.1f;
+float densityThreshold = .420003f;
+float scale 		   = .595005f;
+float weatherScale     = .0001;
+float higherScale 	   = .375008;
 
 float noise[800 * 600];
 Perlin2d perlin;
@@ -322,8 +324,8 @@ int main() {
 
 	quadShdr.use();
 	quadShdr.setVec3("camPos", cam.position);
-	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 2.5f, 0.0f));
-	quadShdr.setVec3("bounding_rect.dims", glm::vec3(100.0f, 50.0f, 100.0f));
+	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 50.5f, 0.0f));
+	quadShdr.setVec3("bounding_rect.dims", glm::vec3(200.0f, 200.0f, 200.0f));
 	quadShdr.setFloat("near", near);
 	quadShdr.setFloat("far", far);
 	quadShdr.setMatrix("invProjMat", glm::inverse(proj));
@@ -333,6 +335,10 @@ int main() {
 	GLuint ntId = funcs::genWorleyNoise(50, 50, 50);
 	GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
 	GLuint detailTextureId = funcs::loadDetailTexture("low_res.raw");
+	GLuint highTexture = funcs::loadGeneric3dTexture("f_data_HIGH.raw");
+	std::cout << "LOADING WEATHER TEXTURE" << std::endl;
+	GLuint weatherDataTexure = funcs::loadGeneric2dTexture("weather_data_f.raw");
+	std::cout << "DONE loading textures" << std::endl;
 
 	glm::mat4 cubeModel = glm::translate(
 		glm::mat4(1.0f),
@@ -350,6 +356,11 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		view = cam.getView();
 
+		// std::cout << "sc: "<< scale << std::endl;
+		// std::cout << "dt: "<< densityThreshold << std::endl;
+		// std::cout << "wc: "<< weatherScale << std::endl;
+		// std::cout << "hc: "<< higherScale << std::endl;
+
 		lightPos = glm::rotate(
 			glm::mat4(1.0f), 
 			glm::radians(0.1f), 
@@ -365,7 +376,8 @@ int main() {
 		planeShdr.setInt("myTexture", 0);
 
 		glActiveTexture(0);
-		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
+		// glBindTexture(GL_TEXTURE_2D, weatherTextureId);
+		glBindTexture(GL_TEXTURE_2D, weatherDataTexure);
 
 		glBindVertexArray(planeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -401,7 +413,7 @@ int main() {
 		cubeShdr.setMatrix("model", cubeModel);
 		cubeShdr.setInt("texture_diffuse", 0);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_3D, ntId);
+		glBindTexture(GL_TEXTURE_3D, detailTextureId);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
@@ -429,16 +441,20 @@ int main() {
 		));
 
 		
-
+		glDisable(GL_BLEND);
 		quadShdr.setInt("texture_clouds", 2);
 		quadShdr.setInt("weather_data", 3);
 		quadShdr.setInt("detailTexture", 4);
 		quadShdr.setFloat("densityThreshold", densityThreshold);
 		quadShdr.setFloat("scale", scale);
+		quadShdr.setFloat("weatherScale", weatherScale);
+		quadShdr.setFloat("higherScale", higherScale);
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_3D, ntId);
+		// glBindTexture(GL_TEXTURE_3D, highTexture);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
+		// glBindTexture(GL_TEXTURE_2D, weatherDataTexure);
 		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_3D, detailTextureId);
 		fbo.draw(quadShdr);
@@ -475,16 +491,16 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cam.move(Camera::UP, dt);
+		cam.move(Camera::UP, dt*5.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cam.move(Camera::DOWN, dt);
+		cam.move(Camera::DOWN, dt*5.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cam.move(Camera::RIGHT, dt);
+		cam.move(Camera::RIGHT, dt*5.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cam.move(Camera::LEFT, dt);
+		cam.move(Camera::LEFT, dt*5.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
 		densityThreshold += 0.001f;
@@ -497,6 +513,19 @@ void processInput(GLFWwindow* window)
 	
 	if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS)
 		scale -= 0.001f;
+
+
+	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+		higherScale += .001f;
+	
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+		higherScale -= .001f;
+
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+		weatherScale += 0.0001f;
+
+	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
+		weatherScale -= 0.0001f;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		cam.incYaw(-cam.sensitivity);

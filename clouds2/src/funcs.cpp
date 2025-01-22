@@ -480,6 +480,7 @@ namespace funcs{
 	}
 
 	GLuint loadDetailTexture(std::string fname){
+		std::cout << "READING DETAIL TEXTURE" << std::endl;
 		std::ifstream file(fname, std::ios::binary);
 		if (!file){
 			std::cerr << "Failed to open file.";
@@ -524,5 +525,110 @@ namespace funcs{
 		glBindTexture(GL_TEXTURE_3D, 0);
 
 		return tId;
+	}
+
+	GLuint loadGeneric3dTexture(std::string fname){
+		std::cout << "LOADING " << fname << std::endl;
+		std::ifstream file(fname, std::ios::binary);
+		if (!file){
+			std::cerr << "Failed to open file.";
+			return 0;
+		}
+
+		struct HeaderInfo {
+			uint32_t DEPTH;
+			uint32_t HEIGHT;
+			uint32_t WIDTH;
+			uint32_t CHANNELS;
+		} info ;
+
+		file.read(reinterpret_cast<char*>(&info), sizeof(int) * 4 );
+
+		std::cout << fname << " METADATA: " << std::endl;
+		std::cout << info.DEPTH << ' ' <<  info.HEIGHT<< ' ' << info.WIDTH
+				  << ' ' << info.CHANNELS << std::endl;
+
+		size_t sz = info.DEPTH * info.HEIGHT * info.WIDTH * info.CHANNELS * sizeof(uint8_t);
+		std::vector<uint8_t> data(sz / sizeof(uint8_t));
+		std::cout << "DATA SIZE" << data.size() << ' ' << sizeof(uint8_t) << std::endl;
+		file.read(reinterpret_cast<char*>(data.data()), sz);
+		file.close();
+		std::cout << "READ THE DATA" << std::endl;
+		std::cout << "SAMPLE: " << (int)data[0] << std::endl;
+
+
+		unsigned int tId;
+		glGenTextures(1, &tId);
+
+		glBindTexture(GL_TEXTURE_3D, tId);
+		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, info.WIDTH, info.HEIGHT, info.DEPTH, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+
+		// Set texture parameters
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+		glBindTexture(GL_TEXTURE_3D, 0);
+
+		return tId;
+	}
+
+
+
+	GLuint loadGeneric2dTexture(std::string fname){
+		std::cout << "LOADING " << fname << std::endl;
+		std::ifstream file (fname, std::ios::binary);
+		if (!file){
+			std::cerr << "Couldn't open file " << fname << std::endl;
+			return 0;
+		}
+
+		struct HeaderInfo {
+			uint32_t HEIGHT;
+			uint32_t WIDTH;
+			uint32_t CHANNELS;
+		} info;
+
+		file.read(reinterpret_cast<char*>(&info), sizeof(int) * 3);
+
+		std::cout << info.HEIGHT<< ' ' << info.WIDTH
+				  << ' ' << info.CHANNELS << std::endl;
+
+		size_t sz = info.HEIGHT * info.WIDTH * info.CHANNELS * sizeof(uint8_t);
+		std::vector<uint8_t> data(sz / sizeof(uint8_t));
+		std::cout << "DATA SIZE" << data.size() << ' ' << sizeof(uint8_t) << std::endl;
+		file.read(reinterpret_cast<char*>(data.data()), sz);
+		file.close();
+		std::cout << "READ THE DATA" << std::endl;
+		std::cout << "SAMPLE: " << (int)data[0] << std::endl;
+		std::cout << "SAMPLE: " << (int)data[1] << std::endl;
+
+		std::cout << "HERE NOW" << std::endl;
+
+		unsigned int tId;
+		glGenTextures(1, &tId);
+		std::cout << "AND FIN HERE NOW"  << tId << std::endl;
+
+		glBindTexture(GL_TEXTURE_2D, tId);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, info.WIDTH, info.HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+		std::cout << "AND STUCK" << std::endl;
+
+		// Set texture parameters
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		std::cout << "AND STUCK" << std::endl;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		std::cout << "AND STUCK" << std::endl;
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		// glGenerateMipmap(GL_TEXTURE_2D);
+
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		std::cout << "AND STUCK" << std::endl;
+
+		return tId;
+
 	}
 }
