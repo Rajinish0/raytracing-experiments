@@ -115,8 +115,8 @@ unsigned int cubeIndices[] = {
 
 float densityThreshold = .420003f;
 float scale 		   = .595005f;
-float weatherScale     = .0001;
-float higherScale 	   = .375008;
+float weatherScale     = .0001f;
+float higherScale 	   = .00001f;
 
 float noise[800 * 600];
 Perlin2d perlin;
@@ -333,7 +333,8 @@ int main() {
 	glm::vec3 lightPos(3.0f, 2.0f, 0.0f);
 	fbo.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f));
 	GLuint ntId = funcs::genWorleyNoise(50, 50, 50);
-	GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
+	// GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
+	GLuint weatherTextureId = funcs::loadWeatherData("f_data_LOW.raw");
 	GLuint detailTextureId = funcs::loadDetailTexture("low_res.raw");
 	GLuint highTexture = funcs::loadGeneric3dTexture("f_data_HIGH.raw");
 	std::cout << "LOADING WEATHER TEXTURE" << std::endl;
@@ -450,8 +451,8 @@ int main() {
 		quadShdr.setFloat("weatherScale", weatherScale);
 		quadShdr.setFloat("higherScale", higherScale);
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_3D, ntId);
-		// glBindTexture(GL_TEXTURE_3D, highTexture);
+		// glBindTexture(GL_TEXTURE_3D, ntId);
+		glBindTexture(GL_TEXTURE_3D, highTexture);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
 		// glBindTexture(GL_TEXTURE_2D, weatherDataTexure);
@@ -522,10 +523,10 @@ void processInput(GLFWwindow* window)
 		higherScale -= .001f;
 
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-		weatherScale += 0.0001f;
+		weatherScale += 0.001f;
 
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		weatherScale -= 0.0001f;
+		weatherScale -= 0.001f;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		cam.incYaw(-cam.sensitivity);

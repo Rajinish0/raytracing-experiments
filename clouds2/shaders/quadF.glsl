@@ -222,12 +222,13 @@ float getCloudDensity2(vec3 p, vec3 boundsMin, vec3 boundsMax){
     vec3 sampleT = ((p - bounding_rect.pos + offSet * 10.0f)/ (bounding_rect.dims) + 0.5f) * scale;
     float heightPercent = (p.y - boundsMin.y)/(boundsMax.y - boundsMin.y);
     // sampleT += offSet/100.0f;
+    float globalCoverage = 0.75f;
     vec4 T = texture(texture_clouds, sampleT);
     float pw = T.r;
     float wfbm = T.g * 0.625 + T.b * .25 + T.a * .125;
 
-    vec4 weather = texture(weather_data, p.xz * weatherScale);
-    float WMc = max(weather.r, saturate(.8-.5) * weather.g * 2.);
+    vec4 weather = texture(weather_data, (p.xz + offSet.xz * 10.0f) * weatherScale);
+    float WMc = max(weather.r, saturate(globalCoverage-.5) * weather.g * 2.);
 
     // float heightPercent = (p.y - (bounding_rect.pos.y-bounding_rect.dims.y/2))/bounding_rect.dims.y;
     float SRb = saturate(remap(heightPercent, 0., 0.07, 0., 1.));
@@ -244,7 +245,7 @@ float getCloudDensity2(vec3 p, vec3 boundsMin, vec3 boundsMax){
     float SN = saturate(
         remap(
             SNsample * SA,
-            1 - .8 * WMc, 1.,
+            1 - globalCoverage * WMc, 1.,
             0., 1.
         ) * DA
     ); // base density
@@ -261,13 +262,13 @@ float getCloudDensity2(vec3 p, vec3 boundsMin, vec3 boundsMax){
     sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f)*higherScale;
     vec4 D = textureLod(detailTexture, sampleT, 0);
     float Dfbm = D.r * .625 + D.g * .25 + D.b * .125;
-    float Dmod = .35 * exp(-.8 * .75) * lerp(Dfbm, 1- Dfbm, saturate(heightPercent * 5));
+    float Dmod = .35 * exp(-globalCoverage * .75) * lerp(Dfbm, 1- Dfbm, saturate(heightPercent * 5));
     float Snd = saturate(remap(
-        SNsample * SA, 1-.8 * WMc, 1., 
+        SNsample * SA, 1-globalCoverage * WMc, 1., 
         0., 1.
     ));
 
-    Snd= max(0., Snd- densityThreshold);
+    // Snd= max(0., Snd- densityThreshold);
 
     float d = saturate(
         remap(
@@ -276,20 +277,21 @@ float getCloudDensity2(vec3 p, vec3 boundsMin, vec3 boundsMax){
     );
 
     // return max(0., d-densityThreshold) * densityMultiplier;
-    return d * densityMultiplier;
+    return clamp(d, 0.0, 1.0)*2.0;
     // return clamp(d, 0.0, 1.0);
     // return max(0., SN- densityThreshold);
     // cloud = remap(cloud, .85, 1., 0., 1.);
     // return max(0., cloud-densityThreshold) * densityMultiplier;
 }
 
-float getCloudDensity3(vec3 p){
+float getCloudDensity3(vec3 p, vec3 boundsMin, vec3 boundsMax){
     vec3 sampleT = ((p - bounding_rect.pos + offSet/5.0)/ (bounding_rect.dims) + 0.5f) * scale;
     vec4 T = texture(texture_clouds, sampleT);
     float pw = T.r;
     float wfbm = T.g * 0.625 + T.b * .25 + T.a * .125;
 
-    float heightPercent = (p.y - bounding_rect.pos.y)/bounding_rect.dims.y;
+    // float heightPercent = (p.y - bounding_rect.pos.y)/bounding_rect.dims.y;
+    float heightPercent = (p.y-boundsMin.y)/(boundsMax.y-boundsMin.y);
     float cloud = remap(pw, wfbm - 1, 1., 0., 1.);
     float heightGradient = saturate(
         remap(heightPercent, 0., .2, 0., 1.)
@@ -300,8 +302,11 @@ float getCloudDensity3(vec3 p){
     float bD = cloud + .01;
 
     if (bD > 0){
+        vec3 sampleT = ((p - bounding_rect.pos + offSet/5.0)/ (bounding_rect.dims) + 0.5f) * higherScale;
         vec4 D = texture(detailTexture, sampleT);
         float Dfbm = D.r * .625 + D.g * .25 + D.b * .125;
+        Dfbm = (sin(offSet.z) + 1.)/2.0;
+        // Dfbm = 0.;
         float detailErodeWeight = (1 - cloud)*(1 - cloud)*(1-cloud);
         float cD = bD - (1-Dfbm)*detailErodeWeight * .5;
         cD = cD * densityMultiplier * .1;
@@ -337,28 +342,39 @@ float getDensityForCloud(float heightFraction, float cloudType){
 uniform float coverageMultiplier = 1.f;
 
 float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax){
-    vec3 sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * scale;
+    vec3 sampleT = ((p - bounding_rect.pos + offSet*5.0)/ (bounding_rect.dims) + 0.5f) * scale;
     // sampleT += offSet/50.0f;
     float heighFraction = (p.y - boundsMin.y)/(boundsMax.y - boundsMin.y);
-    vec4 T = textureLod(texture_clouds, sampleT, 0);
+    vec4 T = texture(texture_clouds, sampleT);
     float pw = T.r;
     float wfbm = T.g * .625 + T.b * .25 + T.a * .125;
     float baseCloud = remap(pw, wfbm - 1, 1., 0., 1.);
+    // float heightGradient = saturate(
+    //     remap(heighFraction, 0., .2, 0., 1.)
+    // ) * saturate(
+    //     remap(heighFraction, 1, .7, 0, 1)
+    // );
+    // baseCloud *= heightGradient;
     baseCloud = max(baseCloud-densityThreshold, 0.);
     vec3 weatherData = getWeatherData(p);
-    float densityGrad = getDensityForCloud(heighFraction, weatherData.g);
+    float densityGrad = getDensityForCloud(heighFraction, .1 );
     baseCloud *= densityGrad;
 
-    float coverage = clamp(weatherData.r, 0., 1.) * coverageMultiplier;
+    float coverage = clamp(weatherData.g, 0., 1.) * coverageMultiplier;
     float coverageCloud = remap(baseCloud, coverage, 1., 0., 1.);
     coverageCloud *= coverage;
-    coverageCloud *= mix(1., .0, clamp(heighFraction/coverage, 0., 1.));
+    // coverageCloud *= mix(1., .0, clamp(heighFraction/coverage, 0., 1.));
     
     float finalCloud = coverageCloud;
-    // if (baseCloud > 0){
-
-    // }
-    return clamp(baseCloud, 0., 1.) * 5.0f;
+    if (baseCloud > 0){
+        sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * higherScale;
+        vec3 highFT = textureLod(detailTexture, sampleT, 0).rgb;
+        float highFBM = highFT.r * .625 + highFT.g * .25 + highFT.b * .125;
+        // highFBM = (sin(offSet.z) + 1.)/2.0;
+        float highModifier = mix(highFBM, 1.0-highFBM, saturate(heighFraction * 10.0));
+        finalCloud = remap(finalCloud, highModifier*0.2, 1.0, 0.0, 1.0);
+    }
+    return clamp(finalCloud, 0., 1.);
 }
 
 
@@ -378,7 +394,7 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     stepSize = 0.3;
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
-        totalDensity += max(0, getCloudDensity2(p, boundsMin, boundsMax)*stepSize);
+        totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax)*stepSize);
         p += r.dir * stepSize;
     }
     float trans = exp(-totalDensity * 1.21);
@@ -415,10 +431,10 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     if (info.intersect && info.distToBox < depth){
         for (int i =0; i < MAX_STEPS; ++i){
-            float density = getCloudDensity2(p, boundsMin, boundsMax);
+            float density = getCloudDensity4(p, boundsMin, boundsMax);
             if (density > 0){
                 // float diffuse = clamp(
-                //     (density - getCloudDensity2(p + .3 * sunDirection, boundsMin, boundsMax))/.3,
+                //     (density - getCloudDensity4(p + .3 * sunDirection, boundsMin, boundsMax))/.3,
                 //      0.0, 1.0
                 //      );
                 // vec3 lin = vec3(0.60,0.60,0.75) * 1.1 + 0.8 * vec3(1.0,0.6,0.3) * diffuse;

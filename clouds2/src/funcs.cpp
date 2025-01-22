@@ -561,7 +561,7 @@ namespace funcs{
 		glGenTextures(1, &tId);
 
 		glBindTexture(GL_TEXTURE_3D, tId);
-		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, info.WIDTH, info.HEIGHT, info.DEPTH, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, info.WIDTH, info.HEIGHT, info.DEPTH, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 
 		// Set texture parameters
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
