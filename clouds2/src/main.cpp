@@ -116,7 +116,7 @@ unsigned int cubeIndices[] = {
 float densityThreshold = .420003f;
 float scale 		   = .595005f;
 float weatherScale     = .0001f;
-float higherScale 	   = .00001f;
+float higherScale 	   =  15.0f;
 
 float noise[800 * 600];
 Perlin2d perlin;
@@ -325,7 +325,7 @@ int main() {
 	quadShdr.use();
 	quadShdr.setVec3("camPos", cam.position);
 	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 50.5f, 0.0f));
-	quadShdr.setVec3("bounding_rect.dims", glm::vec3(200.0f, 200.0f, 200.0f));
+	quadShdr.setVec3("bounding_rect.dims", glm::vec3(400.0f, 200.0f, 400.0f));
 	quadShdr.setFloat("near", near);
 	quadShdr.setFloat("far", far);
 	quadShdr.setMatrix("invProjMat", glm::inverse(proj));
@@ -334,7 +334,7 @@ int main() {
 	fbo.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f));
 	GLuint ntId = funcs::genWorleyNoise(50, 50, 50);
 	// GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
-	GLuint weatherTextureId = funcs::loadWeatherData("f_data_LOW.raw");
+	GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
 	GLuint detailTextureId = funcs::loadDetailTexture("low_res.raw");
 	GLuint highTexture = funcs::loadGeneric3dTexture("f_data_HIGH.raw");
 	std::cout << "LOADING WEATHER TEXTURE" << std::endl;
@@ -517,10 +517,10 @@ void processInput(GLFWwindow* window)
 
 
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		higherScale += .001f;
+		higherScale += .01f;
 	
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		higherScale -= .001f;
+		higherScale -= .01f;
 
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		weatherScale += 0.001f;

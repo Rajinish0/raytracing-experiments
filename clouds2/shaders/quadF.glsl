@@ -341,8 +341,9 @@ float getDensityForCloud(float heightFraction, float cloudType){
 
 uniform float coverageMultiplier = 1.f;
 
-float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax){
-    vec3 sampleT = ((p - bounding_rect.pos + offSet*5.0)/ (bounding_rect.dims) + 0.5f) * scale;
+float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality){
+    p += offSet*10.0;
+    vec3 sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * scale;
     // sampleT += offSet/50.0f;
     float heighFraction = (p.y - boundsMin.y)/(boundsMax.y - boundsMin.y);
     vec4 T = texture(texture_clouds, sampleT);
@@ -366,9 +367,9 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax){
     // coverageCloud *= mix(1., .0, clamp(heighFraction/coverage, 0., 1.));
     
     float finalCloud = coverageCloud;
-    if (baseCloud > 0){
+    if (baseCloud > 0 && highQuality){
         sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * higherScale;
-        vec3 highFT = textureLod(detailTexture, sampleT, 0).rgb;
+        vec3 highFT = texture(detailTexture, sampleT).rgb;
         float highFBM = highFT.r * .625 + highFT.g * .25 + highFT.b * .125;
         // highFBM = (sin(offSet.z) + 1.)/2.0;
         float highModifier = mix(highFBM, 1.0-highFBM, saturate(heighFraction * 10.0));
@@ -394,12 +395,12 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     stepSize = 0.3;
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
-        totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax)*stepSize);
+        totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax, true)*stepSize);
         p += r.dir * stepSize;
     }
     float trans = exp(-totalDensity * 1.21);
-    // return trans;
-    return .15 + trans * (1- .15);
+    return trans;
+    // return .15 + trans * (1- .15);
     // }
     return 0.0;
 }
@@ -421,7 +422,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     float totalDensity = 0.;
     float trans = 1.;
     float lightEnergy = 0.0;
-    float phase = HenyeyGreenstein(.3, dot(r.dir, sunDirection));
+    float phase = HenyeyGreenstein(.1, dot(r.dir, sunDirection));
 
     _box_intersect_info info = rayIntersectsBox(r, bounding_rect);
     depth = linearizeDepth(depth);
@@ -431,7 +432,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     if (info.intersect && info.distToBox < depth){
         for (int i =0; i < MAX_STEPS; ++i){
-            float density = getCloudDensity4(p, boundsMin, boundsMax);
+            float density = getCloudDensity4(p, boundsMin, boundsMax, true);
             if (density > 0){
                 // float diffuse = clamp(
                 //     (density - getCloudDensity4(p + .3 * sunDirection, boundsMin, boundsMax))/.3,
@@ -460,10 +461,10 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     float dstFog = 1-exp(-max(0, depth) * 8 * .0001);
     vec3 sky = dstFog * skyColBase;
-    backgroundColor = backgroundColor * (1-dstFog) + sky;
+    backgroundColor = backgroundColor;// * (1-dstFog) + sky;
 
     float focusedEyeCos = pow(saturate(dot(r.dir, sunDirection)), 1);
-    float sun = saturate(
+    float sun =saturate(
         HenyeyGreenstein(.9995, focusedEyeCos) * trans
     );
 
@@ -501,9 +502,10 @@ void main(){
     vec3 col = texture(texture_diffuse1, tCoord).rgb;
     float depth = texture(depthTexture, tCoord).r;
 
-    // if (depth == 1.0){
-    //     col = vec4(color, 1.0);
-    // }
+    if (depth == 1.0){
+        // col = vec4(color, 1.0);
+        // col = color;
+    }
 
     vec3 res = rayMarch(r, col.xyz, color, depth);
     fcol = vec4(res, 1.0);
