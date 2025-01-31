@@ -118,6 +118,8 @@ float densityThreshold = .420003f;
 float scale 		   = .595005f;
 float weatherScale     = .0001f;
 float higherScale 	   =  15.0f;
+float SIGMA 		   = 0.9f;
+float HG			   = 0.3f;
 
 float noise[800 * 600];
 Perlin2d perlin;
@@ -357,7 +359,7 @@ int main() {
 	fbo.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f));
 	GLuint ntId = funcs::genWorleyNoise(50, 50, 50);
 	// GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
-	GLuint weatherTextureId = funcs::loadWeatherData("weather_data.raw");
+	GLuint weatherTextureId = funcs::loadWeatherData("weather_data_2.raw");
 	GLuint detailTextureId = funcs::loadDetailTexture("low_res.raw");
 	GLuint highTexture = funcs::loadGeneric3dTexture("f_data_HIGH.raw");
 	std::cout << "LOADING WEATHER TEXTURE" << std::endl;
@@ -477,6 +479,8 @@ int main() {
 		computeShdr.setFloat("scale", scale);
 		computeShdr.setFloat("weatherScale", weatherScale);
 		computeShdr.setFloat("higherScale", higherScale);
+		computeShdr.setFloat("SIGMA", SIGMA);
+		computeShdr.setFloat("HG", HG);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, fbo.textureId);
         glActiveTexture(GL_TEXTURE2);
@@ -534,16 +538,16 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cam.move(Camera::UP, dt*5.0f);
+		cam.move(Camera::UP, dt*10.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cam.move(Camera::DOWN, dt*5.0f);
+		cam.move(Camera::DOWN, dt*10.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cam.move(Camera::RIGHT, dt*5.0f);
+		cam.move(Camera::RIGHT, dt*10.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cam.move(Camera::LEFT, dt*5.0f);
+		cam.move(Camera::LEFT, dt*10.0f);
 
 	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS)
 		densityThreshold += 0.001f;
@@ -559,16 +563,24 @@ void processInput(GLFWwindow* window)
 
 
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		higherScale += .01f;
+		// higherScale += .01f;
+		HG += 0.001;
 	
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		higherScale -= .01f;
+		// higherScale -= .01f;
+		HG -= 0.001;
 
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-		weatherScale += 0.001f;
+		weatherScale += 0.0001f;
 
 	if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-		weatherScale -= 0.001f;
+		weatherScale -= 0.0001f;
+
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+		SIGMA += 0.001f;
+
+	if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+		SIGMA -= 0.001f;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
 		cam.incYaw(-cam.sensitivity);

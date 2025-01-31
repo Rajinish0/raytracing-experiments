@@ -346,10 +346,10 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     // baseCloud *= heightGradient;
     baseCloud = max(baseCloud-densityThreshold, 0.);
     vec3 weatherData = getWeatherData(p);
-    float densityGrad = getDensityForCloud(heighFraction, .1 );
+    float densityGrad = getDensityForCloud(heighFraction, weatherData.g );
     baseCloud *= densityGrad;
 
-    float coverage = clamp(weatherData.g, 0., 1.) * coverageMultiplier;
+    float coverage = clamp(weatherData.r, 0., 1.) * coverageMultiplier;
     float coverageCloud = remap(baseCloud, coverage, 1., 0., 1.);
     coverageCloud *= coverage;
     // coverageCloud *= mix(1., .0, clamp(heighFraction/coverage, 0., 1.));
@@ -368,7 +368,13 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
 
 
 
-const float SIGMA = 0.05f;
+// const float SIGMA = 0.9f;
+
+uniform float SIGMA = 0.9f;
+
+float beers(float dist, float abs){
+    return exp(-dist * abs);
+}
 
 float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     Ray r;
@@ -380,13 +386,14 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     float distInsideBox = info.distInsideBox;
 
     float stepSize = distInsideBox / 6.;
-    stepSize = 0.3;
+    stepSize = 0.03;
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
         totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax, true)*stepSize);
-        p += r.dir * stepSize;
+        p += r.dir * stepSize * (step + 1);
     }
-    float trans = exp(-totalDensity * 1.21);
+    // float trans = exp(-totalDensity * 1.21);
+    float trans = beers(totalDensity, SIGMA);
     return trans;
     // return .15 + trans * (1- .15);
     // }
@@ -403,6 +410,8 @@ float HenyeyGreenstein(float g, float mu) {
 
 vec3 sunColor = vec3(1.0, 0.95686275, 0.839215);
 
+uniform float HG = .3;
+
 vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     vec3 boundsMax = bounding_rect.pos + bounding_rect.dims/2;
     vec3 boundsMin = bounding_rect.pos - bounding_rect.dims/2;
@@ -410,7 +419,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     float totalDensity = 0.;
     float trans = 1.;
     float lightEnergy = 0.0;
-    float phase = HenyeyGreenstein(.1, dot(r.dir, sunDirection));
+    float phase = HenyeyGreenstein(HG, dot(r.dir, sunDirection));
 
     _box_intersect_info info = rayIntersectsBox(r, bounding_rect);
     depth = linearizeDepth(depth);
@@ -432,6 +441,9 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
                 // color.rgb *= color.a;
                 // col += color * (1.0-col.a);
                 float lightT = lightMarch(p, boundsMin, boundsMax);
+                // float lum = density * phase;
+                // trans *= lightT;
+                // lightEnergy += trans * lum;
                 lightEnergy += density * stepSize * trans * lightT * phase;
                 trans *= exp(-density * stepSize * SIGMA);
                 if (trans < .01)
@@ -447,18 +459,20 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
         // return backgroundColor.rgb * (1-col.a) + col.rgb;
     }
 
-    float dstFog = 1-exp(-max(0, depth) * 8 * .0001);
-    vec3 sky = dstFog * skyColBase;
-    backgroundColor = backgroundColor;// * (1-dstFog) + sky;
+    // float dstFog = 1-exp(-max(0, depth) * 8 * .0001);
+    // vec3 sky = dstFog * skyColBase;
+    // backgroundColor = backgroundColor;// * (1-dstFog) + sky;
 
-    float focusedEyeCos = pow(saturate(dot(r.dir, sunDirection)), 1);
-    float sun =saturate(
-        HenyeyGreenstein(.9995, focusedEyeCos) * trans
-    );
+    // float focusedEyeCos = pow(saturate(dot(r.dir, sunDirection)), 1);
+    // float sun =saturate(
+    //     HenyeyGreenstein(.9995, focusedEyeCos) * trans
+    // );
 
-    vec3 cloudCol = lightEnergy * sunColor;
-    col = backgroundColor * trans + cloudCol;
-    col = clamp(col, 0.0, 1.0) * (1-sun) + sunColor * sun;
+    // vec3 cloudCol = lightEnergy * sunColor;
+    // col = backgroundColor * trans + cloudCol;
+    // col = clamp(col, 0.0, 1.0) * (1-sun) + sunColor * sun;
+
+    col = backgroundColor + sunColor * lightEnergy;
 
     return col;
 }
@@ -479,14 +493,14 @@ void main(){
 
 
     vec3 color;
-    // vec3 sunColor = vec3(1.0,0.7,0.1);
+    vec3 sunColor = vec3(1.0,0.5,0.3);
     float sun = clamp(dot(sunDirection, r.dir), 0.0, 1.0 );
     // Base sky color
     color = vec3(0.7,0.7,0.90);
     // Add vertical gradient
-    color += 0.8 * vec3(0.0,0.75,0.90) * r.dir.y;
+    // color -= 0.8 * vec3(0.90,0.75,0.90) * r.dir.y;
     // Add sun color to sky
-    // color += 0.5 * sunColor * pow(sun, 100.0);
+    color += 0.5 * sunColor * pow(sun, 100.0);
 
     
     // _box_intersect_info info = rayIntersectsBox(r, bounding_rect);
@@ -498,7 +512,8 @@ void main(){
         // col = color;
     }
 
-    vec3 res = rayMarch(r, col.xyz, color, depth);
+    // vec3 res = rayMarch(r, col.xyz, color, depth);
+    vec3 res = rayMarch(r, color, color, depth);
     // fcol = vec4(res, 1.0);
     imageStore(imgOutput, fragCoord, vec4(res, 1.0));
 }
