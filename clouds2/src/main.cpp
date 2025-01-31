@@ -20,6 +20,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "framebuffer.h"
+#include "compute_shader.h"
 #include "textrender.h"
 #include <ft2build.h> // checking if build was good
 
@@ -217,6 +218,14 @@ int main() {
 		"shaders/textFshader.glsl"
 	 };
 
+	 ComputeShader computeShdr {
+		"shaders/compute.glsl"
+	 };
+
+	 Shader screenShdr {
+		"shaders/q_v.glsl",
+		"shaders/q_f.glsl"
+	 };
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -286,6 +295,20 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
+	unsigned int compT;
+	glGenTextures(1, &compT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, compT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 800, 600, 0, GL_RGBA, 
+				GL_FLOAT, NULL);
+
+	glBindImageTexture(0, compT, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+
+
 	glViewport(0, 0, 800, 600);
 	glm::mat4 trans(1.0f);
 	glm::mat4 model(1.0f);
@@ -322,13 +345,13 @@ int main() {
 	cam.position = glm::vec3(0.0f);
 	Mesh sphere = funcs::genSphere();
 
-	quadShdr.use();
-	quadShdr.setVec3("camPos", cam.position);
-	quadShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 50.5f, 0.0f));
-	quadShdr.setVec3("bounding_rect.dims", glm::vec3(400.0f, 200.0f, 400.0f));
-	quadShdr.setFloat("near", near);
-	quadShdr.setFloat("far", far);
-	quadShdr.setMatrix("invProjMat", glm::inverse(proj));
+	computeShdr.use();
+	computeShdr.setVec3("camPos", cam.position);
+	computeShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 50.5f, 0.0f));
+	computeShdr.setVec3("bounding_rect.dims", glm::vec3(400.0f, 200.0f, 400.0f));
+	computeShdr.setFloat("near", near);
+	computeShdr.setFloat("far", far);
+	computeShdr.setMatrix("invProjMat", glm::inverse(proj));
 
 	glm::vec3 lightPos(3.0f, 2.0f, 0.0f);
 	fbo.setClearColor(glm::vec4(0.1f, 0.1f, 0.1f, 0.1f));
@@ -429,13 +452,13 @@ int main() {
 
 		fbo.unBind();
 
-		quadShdr.use();
-		quadShdr.setMatrix(
+		computeShdr.use();
+		computeShdr.setMatrix(
 			"invViewMat",
 			glm::inverse(view)
 		);
-		quadShdr.setVec3("camPos", cam.position);
-		quadShdr.setVec3("offSet", glm::vec3(
+		computeShdr.setVec3("camPos", cam.position);
+		computeShdr.setVec3("offSet", glm::vec3(
 			0.0f, 
 			0.0f,
 			(float)glfwGetTime()
@@ -443,22 +466,41 @@ int main() {
 
 		
 		glDisable(GL_BLEND);
-		quadShdr.setInt("texture_clouds", 2);
-		quadShdr.setInt("weather_data", 3);
-		quadShdr.setInt("detailTexture", 4);
-		quadShdr.setFloat("densityThreshold", densityThreshold);
-		quadShdr.setFloat("scale", scale);
-		quadShdr.setFloat("weatherScale", weatherScale);
-		quadShdr.setFloat("higherScale", higherScale);
-		glActiveTexture(GL_TEXTURE2);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, compT);
+        computeShdr.setInt("texture_diffuse1", 1);
+        computeShdr.setInt("depthTexture", 2);
+		computeShdr.setInt("texture_clouds", 3);
+		computeShdr.setInt("weather_data", 4);
+		computeShdr.setInt("detailTexture", 5);
+		computeShdr.setFloat("densityThreshold", densityThreshold);
+		computeShdr.setFloat("scale", scale);
+		computeShdr.setFloat("weatherScale", weatherScale);
+		computeShdr.setFloat("higherScale", higherScale);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, fbo.textureId);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, fbo.depthTextureId);
+		glActiveTexture(GL_TEXTURE3);
 		// glBindTexture(GL_TEXTURE_3D, ntId);
 		glBindTexture(GL_TEXTURE_3D, highTexture);
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, weatherTextureId);
 		// glBindTexture(GL_TEXTURE_2D, weatherDataTexure);
-		glActiveTexture(GL_TEXTURE4);
+		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_3D, detailTextureId);
-		fbo.draw(quadShdr);
+		glDispatchCompute((unsigned int)std::ceil(800.0/16.0), 
+						  (unsigned int)std::ceil(600.0/16.0),
+						  1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+		// fbo.draw(quadShdr);
+
+		screenShdr.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, compT);
+		glBindVertexArray(planeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// plane.draw(quadShdr, 0);
 
