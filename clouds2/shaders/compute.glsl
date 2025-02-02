@@ -363,7 +363,7 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
         float highModifier = mix(highFBM, 1.0-highFBM, saturate(heighFraction * 10.0));
         finalCloud = remap(finalCloud, highModifier*0.2, 1.0, 0.0, 1.0);
     }
-    return clamp(finalCloud, 0., 1.);
+    return clamp(finalCloud, 0., 1.) * 2.0;
 }
 
 
@@ -390,7 +390,7 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
         totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax, true)*stepSize);
-        p += r.dir * stepSize * (step + 1);
+        p += r.dir * stepSize;
     }
     // float trans = exp(-totalDensity * 1.21);
     float trans = beers(totalDensity, SIGMA);
