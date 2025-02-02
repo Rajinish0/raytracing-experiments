@@ -21,6 +21,7 @@ public:
 		:message(msg) {}
 };
 
+
 Texture::Texture(std::string path, std::string directory, std::string type) {
 	std::cout << "HERE now " << std::endl;
 	this->id = funcs::TextureFromFile(path, directory);

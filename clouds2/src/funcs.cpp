@@ -631,4 +631,8 @@ namespace funcs{
 		return tId;
 
 	}
+
+	size_t flatten(size_t i, size_t j, size_t width){
+		return (j + i * width);
+	}
 }
