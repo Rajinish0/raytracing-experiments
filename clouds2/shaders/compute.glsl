@@ -365,7 +365,7 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     // baseCloud *= heightGradient;
     baseCloud = max(baseCloud-densityThreshold, 0.);
     vec3 weatherData = getWeatherData(p);
-    float densityGrad = getDensityForCloud(heighFraction, weatherData.g );
+    float densityGrad = getDensityForCloud(heighFraction, .1 );
     baseCloud *= densityGrad;
 
     float coverage = clamp(weatherData.r, 0., 1.) * coverageMultiplier;
@@ -405,14 +405,14 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     float distInsideBox = info.distInsideBox;
 
     float stepSize = distInsideBox / 6.;
-    stepSize = 0.03;
+    stepSize = 0.3;
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
         totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax, true)*stepSize);
         p += r.dir * stepSize;
     }
     // float trans = exp(-totalDensity * 1.21);
-    float trans = beers(totalDensity, SIGMA);
+    float trans = beers(totalDensity, 1.21);
     return trans;
     // return .15 + trans * (1- .15);
     // }
@@ -480,7 +480,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     // float dstFog = 1-exp(-max(0, depth) * 8 * .0001);
     // vec3 sky = dstFog * skyColBase;
-    // backgroundColor = backgroundColor;// * (1-dstFog) + sky;
+    // backgroundColor = backgroundColor * (1-dstFog) + sky;
 
     // float focusedEyeCos = pow(saturate(dot(r.dir, sunDirection)), 1);
     // float sun =saturate(
@@ -491,7 +491,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     // col = backgroundColor * trans + cloudCol;
     // col = clamp(col, 0.0, 1.0) * (1-sun) + sunColor * sun;
 
-    col = backgroundColor + sunColor * lightEnergy;
+    col = backgroundColor*trans + sunColor * lightEnergy;
 
     return col;
 }
