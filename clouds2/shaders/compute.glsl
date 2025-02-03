@@ -352,7 +352,7 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     vec3 sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * scale;
     // sampleT += offSet/50.0f;
     float heighFraction = (p.y - boundsMin.y)/(boundsMax.y - boundsMin.y);
-    vec4 T = textureLod(texture_clouds, sampleT, 0);
+    vec4 T = texture(texture_clouds, sampleT);
     float pw = T.r;
     float wfbm = T.g * .625 + T.b * .25 + T.a * .125;
     float baseCloud = remap(pw, wfbm - 1, 1., 0., 1.);
@@ -376,11 +376,11 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     float finalCloud = coverageCloud;
     if (baseCloud > 0 && highQuality){
         sampleT = ((p - bounding_rect.pos)/ (bounding_rect.dims) + 0.5f) * higherScale;
-        vec3 highFT = textureLod(detailTexture, sampleT, 0).rgb;
+        vec3 highFT = texture(detailTexture, sampleT).rgb;
         float highFBM = highFT.r * .625 + highFT.g * .25 + highFT.b * .125;
         // highFBM = (sin(offSet.z) + 1.)/2.0;
         float highModifier = mix(highFBM, 1.0-highFBM, saturate(heighFraction * 10.0));
-        finalCloud = remap(finalCloud, highModifier*0.4, 1.0, 0.0, 1.0);
+        finalCloud = remap(finalCloud, highModifier*0.2, 1.0, 0.0, 1.0);
     }
     return clamp(finalCloud, 0., 1.) * 4.0;
 }
@@ -491,7 +491,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     // col = backgroundColor * trans + cloudCol;
     // col = clamp(col, 0.0, 1.0) * (1-sun) + sunColor * sun;
 
-    col = backgroundColor * trans + sunColor * lightEnergy;
+    col = backgroundColor + sunColor * lightEnergy;
 
     return col;
 }
