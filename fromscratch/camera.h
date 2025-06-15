@@ -3,6 +3,7 @@
 #include "material.h"
 #include <thread> 
 #include <mutex>
+#include <string>
 class Camera{
 public:
 	double aspect_ratio = 16.0/9.0;
@@ -20,23 +21,27 @@ public:
 
 	std::mutex console_mutex;
 
-	void job(int thread_id, int i, int endHeight, std::vector<color>& v, const hittable& world){
-		for (;i < endHeight; i++){
+	void job(int thread_id, int startHeight, int endHeight, std::vector<color>& v, const hittable& world){
+		auto print_fn = [thread_id](std::mutex& mtx, std::string str){
+			std::lock_guard<std::mutex> lock(mtx);
+			std::cout << "\033[" << thread_id + 1 << ";0H";
+			std::cout << str << std::endl;
+		};
+
+		for (int i = startHeight; i < endHeight; i++){
 			for (int j =0; j < image_width; j++){
 				color pixel_color(0);
 				for (int sample =0; sample < samples_per_pixel; sample++){
 					ray r = get_ray(i, j);
 					pixel_color += ray_color(r, world, max_depth);
 				}
-
-				v.push_back(pixel_samples_scale*pixel_color);
+				v[j + (i - startHeight)*image_width] = pixel_samples_scale * pixel_color;
+				// v.push_back(pixel_samples_scale*pixel_color);
 			}
-	//		{
-	//			std::lock_guard<std::mutex> lock(console_mutex);
-				std::cout << "\033[" << thread_id + 1 << ";0H";
-				std::cout << "Thread " << thread_id << " processing " << i << std::flush;
-	//		}
+			print_fn(console_mutex, "Thread " + std::to_string(thread_id) + " processing " + std::to_string(i));
 		}
+
+		print_fn(console_mutex, "Finished!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	}
 
 	void renderFast(const hittable& world){
@@ -53,17 +58,19 @@ public:
 
 		std::cout << "\033[2J\033[1;1H" << std::flush; //clear the console move to 1, 1
 
-		for (int i =0; i < numThreads - 1; ++i){
-			 
-			threads.emplace_back([this, &world, &v, i, heightPerThread](){
-				job(i, i*heightPerThread, (i+1)*heightPerThread, v[i], world);	
+		for (int i =0; i < numThreads; ++i){
+			int start = i* heightPerThread;
+			int end = (i != numThreads - 1) ? (i + 1)*heightPerThread : image_height;
+			v[i].resize( (end-start)*image_width );
+			threads.emplace_back([this, &world, &v, i, start, end](){
+				job(i, start, end, v[i], world);	
 			});
 		}
 
-		int i = numThreads - 1;
-		threads.emplace_back([this, &world, &v, i, heightPerThread](){
-				job(i, i*heightPerThread, image_height, v[i], world);	
-			});
+		// int i = numThreads - 1;
+		// threads.emplace_back([this, &world, &v, i, heightPerThread](){
+		// 		job(i, i*heightPerThread, image_height, v[i], world);	
+		// 	});
 
 		for (auto& thread : threads)
 			thread.join();
@@ -92,8 +99,8 @@ public:
 		file << image_width << " " << image_height << "\n";
 		file << 255 << '\n';
 
-		auto q_du = pixel_du / 4.0; // q as in quarter..
-		auto q_dv = pixel_dv / 4.0; 
+		// auto q_du = pixel_du / 4.0; // q as in quarter..
+		// auto q_dv = pixel_dv / 4.0; 
 
 		for (int i =0 ; i < image_height; i++){
 			std::clog << "\rRemaining: " << image_height-i << ' ' << std::flush;
@@ -241,8 +248,9 @@ private:
 					+ (i+offset.y())*(pixel_dv);
 		auto ray_orig = (defocus_angle <= 0) ? camera_center : defocus_disk_sample();
 		auto ray_dir  = pixel_sample - ray_orig;
+		double tm = random_double();
 
-		return ray(ray_orig, ray_dir);
+		return ray(ray_orig, ray_dir, tm);
 	}
 
 	point3 defocus_disk_sample() const{

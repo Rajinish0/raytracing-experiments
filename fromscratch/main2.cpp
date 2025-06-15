@@ -5,6 +5,7 @@
 #include "material.h"
 #include "sphere.h"
 #include "camera.h"
+#include "bvh.h"
 
 #include <fstream>
 
@@ -23,10 +24,12 @@ int main(){
 
 	//world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
 	world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, mat_ground));
-	world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, mat_center));
+	world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2) + vec3(0., 0.2, 0.), 0.5, mat_center));
 	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, mat_left));
 	world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.4, mat_bubble));
 	world.add(make_shared<sphere>(point3( 1.0, 0.0, -1.0), 0.5, mat_right));
+
+	world = hittable_list(make_shared<bvh_node>(world));
 
 	Camera cam;
 	cam.samples_per_pixel = 100;
@@ -37,7 +40,7 @@ int main(){
 	cam.defocus_angle	  = deg_to_rad(10.0);
 	cam.focus_dist 		  = 3.4;
 
-	cam.render(world);
+	cam.renderFast(world);
 
 
 }

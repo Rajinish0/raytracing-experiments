@@ -2,6 +2,7 @@
 #define MATERIAL_H
 
 #include "rtweekend.h"
+#include "texture.h"
 
 class material{
 public:
@@ -17,19 +18,23 @@ public:
 class lambertian : public material{
 public:
 	lambertian(const color& whiteness)
-		:whiteness(whiteness) {}
+		:tex(make_shared<solid_color>(whiteness)) {}
+
+	lambertian(shared_ptr<Texture> texture)
+		:tex(texture){}
 
 	bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override{
 		auto scatter_dir = rec.normal + random_unit_vector();
 		if (scatter_dir.near_zero())
 			scatter_dir = rec.normal;
 		scattered = ray(rec.p, scatter_dir);
-		attenuation = whiteness;
+		attenuation = tex->value(rec.u, rec.v, rec.p);
 		return true;
 	}
 
 private:
-	color whiteness;
+	shared_ptr<Texture> tex;
+	// color whiteness;
 };
 
 class metal : public material{
@@ -40,7 +45,7 @@ public:
 	bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override{
 		vec3 ref = reflect(r_in.direction(), rec.normal);
 		ref = unit_vector(ref) + fuzz*random_unit_vector();
-		scattered = ray(rec.p, ref);
+		scattered = ray(rec.p, ref, r_in.time());
 		attenuation = whiteness;
 		return (dot(scattered.direction(), rec.normal) > 0);
 	}
@@ -73,7 +78,7 @@ public:
 		else{
 			direction = refract(unit_direction, rec.normal, ri);
 		}
-		scattered = ray(rec.p, direction);
+		scattered = ray(rec.p, direction, r_in.time());
 		return true;
 	}
 

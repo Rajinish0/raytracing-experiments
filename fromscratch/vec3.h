@@ -192,7 +192,7 @@ inline vec3 reflect(const vec3& v, const vec3& n){
 //v'orth needs to be in this direction but with the magitude of
 //sin(theta') which is (eta/eta')*sin(theta)
 //so multiplying vorth with (eta/eta') gives v'orth
-//v'parallel is easy to obtain using pythagorus
+//v'parallel is easy to obtain using pythagorus (the formula not the old man himself)
 inline vec3 refract(const vec3& v, const vec3& n, double eta_over_etaprime){
 	auto cos_theta = std::fmin(dot(-v, n), 1.0);
 	vec3 r_out_orth = eta_over_etaprime*(v + cos_theta*n);

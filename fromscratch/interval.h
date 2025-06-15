@@ -8,6 +8,11 @@ public:
 		: min(infinity), max(-infinity){}
 	interval(double min, double max)
 		: min(min), max(max){}
+	interval(const interval& a, const interval& b){
+		min = (a.min <= b.min) ? a.min : b.min;
+		max = (a.max >= b.max) ? a.max : b.max;
+	}
+	
 
 	double size() const{
 		return max - min;
@@ -19,6 +24,11 @@ public:
 
 	bool surrounds(double x) const{
 		return min < x && x < max;
+	}
+
+	interval expand(double delta) const {
+		double padding = delta/2.;
+		return {min - padding, max + padding};
 	}
 
 	double clamp(double x) const{
