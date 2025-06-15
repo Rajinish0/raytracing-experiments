@@ -22,7 +22,6 @@
 #include "framebuffer.h"
 #include "compute_shader.h"
 #include "textrender.h"
-#include "terrain.h"
 #include <ft2build.h> // checking if build was good
 
 
@@ -221,11 +220,6 @@ int main() {
 		"shaders/textFshader.glsl"
 	 };
 
-	 Shader terrainShader {
-		"shaders/p_v.glsl",
-		"shaders/p_f.glsl"
-	 };
-
 	 ComputeShader computeShdr {
 		"shaders/compute.glsl"
 	 };
@@ -329,7 +323,7 @@ int main() {
 	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 	const float near = 0.1f;
-	const float far  = 1000.0f;
+	const float far  = 500.0f;
 	proj = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, near, far);
 	glm::mat4 planeModel = glm::rotate(
 		glm::mat4(1.0f), 
@@ -356,7 +350,7 @@ int main() {
 	computeShdr.use();
 	computeShdr.setVec3("camPos", cam.position);
 	computeShdr.setVec3("bounding_rect.pos", glm::vec3(0.0f, 50.5f, 0.0f));
-	computeShdr.setVec3("bounding_rect.dims", glm::vec3(400.0f, 100.0f, 400.0f));
+	computeShdr.setVec3("bounding_rect.dims", glm::vec3(400.0f, 200.0f, 400.0f));
 	computeShdr.setFloat("near", near);
 	computeShdr.setFloat("far", far);
 	computeShdr.setMatrix("invProjMat", glm::inverse(proj));
@@ -374,19 +368,8 @@ int main() {
 
 	glm::mat4 cubeModel = glm::translate(
 		glm::mat4(1.0f),
-		glm::vec3(3.0f, 30.0f, 0.0f)
+		glm::vec3(3.0f, 0.0f, 0.0f)
 	);
-	cubeModel = glm::scale(
-		cubeModel,
-		glm::vec3(1.0)
-	);
-
-	glm::mat4 terrainModel = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -2.0f));
-	terrainModel = glm::rotate(
-		terrainModel, glm::radians(-90.0f),
-		glm::vec3(1.0f, 0.0f, 0.0f));
-
-	Terrain terr{100, 400.0f, terrainShader};
 
 	while (!window.shouldClose())
 	{
@@ -459,12 +442,6 @@ int main() {
 		glBindTexture(GL_TEXTURE_3D, detailTextureId);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-
-		terrainShader.use();
-		terrainShader.setMatrix("proj", proj);
-		terrainShader.setMatrix("view", view);
-		terrainShader.setMatrix("model", terrainModel);
-		terr.draw();
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -586,12 +563,12 @@ void processInput(GLFWwindow* window)
 
 
 	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		higherScale += .01f;
-		// HG += 0.001;
+		// higherScale += .01f;
+		HG += 0.001;
 	
 	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		higherScale -= .01f;
-		// HG -= 0.001;
+		// higherScale -= .01f;
+		HG -= 0.001;
 
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
 		weatherScale += 0.0001f;
@@ -606,25 +583,25 @@ void processInput(GLFWwindow* window)
 		SIGMA -= 0.001f;
 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-		cam.incYaw(-cam.sensitivity*10.0);
+		cam.incYaw(-cam.sensitivity);
 		// cam.yaw -= cam.sensitivity;
 		// cam.updateDirection();
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-		cam.incYaw(cam.sensitivity*10.0);
+		cam.incYaw(cam.sensitivity);
 		// cam.yaw += cam.sensitivity;
 		// cam.updateDirection();
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
 		// cam.pitch += cam.sensitivity;
-		cam.incPitch(cam.sensitivity*10.0f);
+		cam.incPitch(cam.sensitivity);
 		// cam.updateDirection();
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		cam.incPitch(-cam.sensitivity*10.0f);
+		cam.incPitch(-cam.sensitivity);
 		//cam.pitch -= cam.sensitivity;
 		// cam.updateDirection();
 	}

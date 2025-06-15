@@ -272,12 +272,7 @@ float getCloudDensity2(vec3 p, vec3 boundsMin, vec3 boundsMax){
     // return max(0., cloud-densityThreshold) * densityMultiplier;
 }
 
-vec3 getWeatherData(vec3 p){
-    vec2 uv = (((p - bounding_rect.pos)/(bounding_rect.dims) + 0.5f) * weatherScale).xz;
-    return texture(weather_data, uv).rgb;
-}
-
-float getCloudDensity3(vec3 p, vec3 boundsMin, vec3 boundsMax, bool hq){
+float getCloudDensity3(vec3 p, vec3 boundsMin, vec3 boundsMax){
     vec3 sampleT = ((p - bounding_rect.pos + offSet/5.0)/ (bounding_rect.dims) + 0.5f) * scale;
     vec4 T = texture(texture_clouds, sampleT);
     float pw = T.r;
@@ -286,47 +281,34 @@ float getCloudDensity3(vec3 p, vec3 boundsMin, vec3 boundsMax, bool hq){
     // float heightPercent = (p.y - bounding_rect.pos.y)/bounding_rect.dims.y;
     float heightPercent = (p.y-boundsMin.y)/(boundsMax.y-boundsMin.y);
     float cloud = remap(pw, wfbm - 1, 1., 0., 1.);
-    // float heightGradient = saturate(
-    //     remap(heightPercent, 0., .2, 0., 1.)
-    // ) * saturate(
-    //     remap(heightPercent, 1, .7, 0, 1)
-    // );
-    // cloud = cloud * heightGradient;
-    // float bD = cloud + .01;
-
-    const float containerEdgeFadeDst = 50;
-    float dstFromEdgeX = min(containerEdgeFadeDst, min(p.x - boundsMin.x, boundsMax.x - p.x));
-    float dstFromEdgeZ = min(containerEdgeFadeDst, min(p.z - boundsMin.z, boundsMax.z - p.z));
-    float edgeWeight = min(dstFromEdgeZ,dstFromEdgeX)/containerEdgeFadeDst;
-
-    vec3 weatherData = getWeatherData(p);
-    float gMin = remap(weatherData.x, 0, 1, 0.1, 0.5);
-    float gMax = remap(weatherData.x, 0, 1, gMin, 0.9);
-    float heightGradient = saturate(remap(heightPercent, 0.0, gMin, 0, 1)) * saturate(remap(heightPercent, 1, gMax, 0, 1));
-    heightGradient *= edgeWeight;
-
-    float bD = cloud * heightGradient;
-
-    
+    float heightGradient = saturate(
+        remap(heightPercent, 0., .2, 0., 1.)
+    ) * saturate(
+        remap(heightPercent, 1, .7, 0, 1)
+    );
+    cloud = cloud * heightGradient;
+    float bD = cloud + .01;
 
     if (bD > 0){
         vec3 sampleT = ((p - bounding_rect.pos + offSet/5.0)/ (bounding_rect.dims) + 0.5f) * higherScale;
         vec4 D = texture(detailTexture, sampleT);
         float Dfbm = D.r * .625 + D.g * .25 + D.b * .125;
-        //Dfbm = (sin(offSet.z) + 1.)/2.0;
+        Dfbm = (sin(offSet.z) + 1.)/2.0;
         // Dfbm = 0.;
         float detailErodeWeight = (1 - cloud)*(1 - cloud)*(1-cloud);
         float cD = bD - (1-Dfbm)*detailErodeWeight * .5;
         cD = cD * densityMultiplier * .1;
-        // return cD;
-        return max(0., cD - densityThreshold) * densityMultiplier * .1;
+        return max(0., cD - densityThreshold);
     }
 
     // cloud = max(0., cloud-densityThreshold);
     return 0;
 }
 
-
+vec3 getWeatherData(vec3 p){
+    vec2 uv = (((p - bounding_rect.pos)/(bounding_rect.dims) + 0.5f) * weatherScale).xz;
+    return texture(weather_data, uv).rgb;
+}
 
 #define STRATUS_GRADIENT vec4(0.0, 0.1, 0.2, 0.3)
 #define STRATOCUMULUS_GRADIENT vec4(0.02, 0.2, 0.48, 0.625)
@@ -356,7 +338,6 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     float pw = T.r;
     float wfbm = T.g * .625 + T.b * .25 + T.a * .125;
     float baseCloud = remap(pw, wfbm - 1, 1., 0., 1.);
-    // float baseCloud = wfbm;
     // float heightGradient = saturate(
     //     remap(heighFraction, 0., .2, 0., 1.)
     // ) * saturate(
@@ -365,7 +346,7 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
     // baseCloud *= heightGradient;
     baseCloud = max(baseCloud-densityThreshold, 0.);
     vec3 weatherData = getWeatherData(p);
-    float densityGrad = getDensityForCloud(heighFraction, .1 );
+    float densityGrad = getDensityForCloud(heighFraction, weatherData.g );
     baseCloud *= densityGrad;
 
     float coverage = clamp(weatherData.r, 0., 1.) * coverageMultiplier;
@@ -382,7 +363,7 @@ float getCloudDensity4(vec3 p, vec3 boundsMin, vec3 boundsMax, bool highQuality)
         float highModifier = mix(highFBM, 1.0-highFBM, saturate(heighFraction * 10.0));
         finalCloud = remap(finalCloud, highModifier*0.2, 1.0, 0.0, 1.0);
     }
-    return clamp(finalCloud, 0., 1.) * 4.0;
+    return clamp(finalCloud, 0., 1.) * 2.0;
 }
 
 
@@ -405,14 +386,14 @@ float lightMarch(vec3 p, vec3 boundsMin, vec3 boundsMax){
     float distInsideBox = info.distInsideBox;
 
     float stepSize = distInsideBox / 6.;
-    stepSize = 0.3;
+    stepSize = 0.03;
     float totalDensity = 0;
     for (int step = 0; step < 6; ++step){
         totalDensity += max(0, getCloudDensity4(p, boundsMin, boundsMax, true)*stepSize);
         p += r.dir * stepSize;
     }
     // float trans = exp(-totalDensity * 1.21);
-    float trans = beers(totalDensity, 1.21);
+    float trans = beers(totalDensity, SIGMA);
     return trans;
     // return .15 + trans * (1- .15);
     // }
@@ -442,7 +423,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     _box_intersect_info info = rayIntersectsBox(r, bounding_rect);
     depth = linearizeDepth(depth);
-    float stepSize = min(depth-info.distToBox, info.distInsideBox) / MAX_STEPS;
+    float stepSize = info.distInsideBox / MAX_STEPS;
     vec3 p = r.pos + r.dir * info.distToBox;
     vec3 col = vec3(0.0);
 
@@ -480,7 +461,7 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
 
     // float dstFog = 1-exp(-max(0, depth) * 8 * .0001);
     // vec3 sky = dstFog * skyColBase;
-    // backgroundColor = backgroundColor * (1-dstFog) + sky;
+    // backgroundColor = backgroundColor;// * (1-dstFog) + sky;
 
     // float focusedEyeCos = pow(saturate(dot(r.dir, sunDirection)), 1);
     // float sun =saturate(
@@ -491,23 +472,11 @@ vec3 rayMarch(Ray r, vec3 backgroundColor, vec3 skyColBase, float depth){
     // col = backgroundColor * trans + cloudCol;
     // col = clamp(col, 0.0, 1.0) * (1-sun) + sunColor * sun;
 
-    col = backgroundColor*trans + sunColor * lightEnergy;
+    col = backgroundColor + sunColor * lightEnergy;
 
     return col;
 }
 
-
-vec3 reconstructWorldPosFromDepth(vec2 screenPos, float depth, mat4 invProjection, mat4 invView) {
-    vec4 clipPos = vec4(screenPos * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    
-    vec4 viewPos = invProjection * clipPos;
-    viewPos /= viewPos.w;
-    
-    // Convert to world space
-    vec4 worldPos = invView * viewPos;
-    
-    return worldPos.xyz;
-}
 
 void main(){
     ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
@@ -535,20 +504,14 @@ void main(){
 
     
     // _box_intersect_info info = rayIntersectsBox(r, bounding_rect);
-    // vec3 col = texture(texture_diffuse1, tCoord).rgb;
+    vec3 col = texture(texture_diffuse1, tCoord).rgb;
     float depth = texture(depthTexture, tCoord).r;
 
-    // vec4 nds_4d_2 = vec4(nds, linearizeDepth(depth), 1.0);
-    // vec3 mp = (invProjMat*nds_4d_2).xyz;
-
-
-    if (depth < 1.0){
-        color = texture(texture_diffuse1, tCoord).rgb;
+    if (depth == 1.0){
         // col = vec4(color, 1.0);
         // col = color;
     }
 
-    vec3 mp = reconstructWorldPosFromDepth(tCoord, depth, invProjMat, invViewMat);
     // vec3 res = rayMarch(r, col.xyz, color, depth);
     vec3 res = rayMarch(r, color, color, depth);
     // fcol = vec4(res, 1.0);
