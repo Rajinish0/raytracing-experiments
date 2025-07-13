@@ -65,6 +65,13 @@ public:
 	static vec3 random(double min, double max){
 		return vec3(random_double(min, max), random_double(min, max), random_double(min, max));
 	}
+
+	void swap_rows(size_t r1, size_t r2)
+	{
+		double tmp = e[r1];
+		e[r1] = e[r2];
+		e[r2] = tmp;
+	}
 };
 
 using point3 = vec3;

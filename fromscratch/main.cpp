@@ -6,13 +6,8 @@
 #include "sphere.h"
 #include "camera.h"
 #include "bvh.h"
-
-
-#ifdef USE_EXPERIMENTAL_QUAD
 #include "quad.h"
-#else
-#include "quad2.h"
-#endif 
+
 
 #include <fstream>
 

@@ -5,6 +5,8 @@
 #include <ostream>
 #include "vec3.h"
 
+#define EPSILON 1e-8
+
 class mat3 {
 private:
     double m[9];
@@ -103,6 +105,57 @@ public:
         return adjoint / det();
     }
 
+    //do gaussian elimiation
+    vec3 solve(vec3 b, bool& solvable) const
+    {
+
+        vec3 res;
+        size_t h = 0, k = 0;
+        mat3 cp = (*this); // work on a copy
+        
+        #define EARLY_EXIT() do { solvable=false; return res; } while(0)
+
+        //reduce to row echelon
+        while (h < 3 && k < 3)
+        {
+            size_t i_max = h;
+            for (int i = h + 1; i < 3; ++i)
+                if (std::fabs(cp.at(i, k)) > std::fabs(cp.at(i_max, k))) i_max = i;
+
+            if (std::fabs(cp.at(i_max, k)) < EPSILON) k++;
+            else{
+                cp.swap_rows(h, i_max);
+                b.swap_rows(h, i_max);
+                for (int i =h+1; i < 3; ++i)
+                {
+                    if (std::fabs(cp.at(h, k)) < EPSILON) EARLY_EXIT();
+                    double f = cp.at(i, k)/cp.at(h, k);
+                    cp.at(i, k) = 0;
+                    for (int j = k + 1; j < 3; ++j)
+                        cp.at(i, j) = cp.at(i, j) - cp.at(h, j) * f;
+                    b[i] = b[i] - b[h] * f;
+                }
+                h++; k++;
+            }
+        }
+
+        res = b;
+        //do back subtitution (cp is now in upper triangular form)
+        for (int i =2; i >= 0; i--)
+        {
+            if (std::fabs(cp.at(i, i)) < EPSILON) EARLY_EXIT();
+
+            for (int j = 2; j >= i; j--)
+            {
+                if (i == j) res[i] /= cp.at(i, j);
+                else res[i] -= cp.at(i, j) * res[j];
+            }
+        }
+
+        solvable = true;
+        return res;
+    }
+
     [[nodiscard]]
     mat3 operator/(double v) const
     {
@@ -187,7 +240,15 @@ public:
 private:
     size_t _cur_ind = 0;
 
+    void swap_rows(const size_t r1, const size_t r2){
+        double tmp;
+        for (int i = 0; i < 3; ++i)
+        {
+            tmp = at(r1, i);
+            this->at(r1, i) = this->at(r2, i);
+            this->at(r2, i) = tmp;
+        }
+    }
 };
-
 
 #endif
