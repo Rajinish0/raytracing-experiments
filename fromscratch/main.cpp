@@ -6,6 +6,7 @@
 #include "sphere.h"
 #include "camera.h"
 #include "bvh.h"
+#include "quad2.h"
 
 #include <fstream>
 
@@ -148,12 +149,63 @@ void perling_spheres(){
 	cam.renderFast(world);
 }
 
+void quads(){
+	hittable_list world;
+
+	auto left_red 	  = make_shared<lambertian>(color(1.0, 0.2, 0.2));
+	auto back_green   = make_shared<lambertian>(color(0.2, 1.0, 0.2));
+	auto right_blue   = make_shared<lambertian>(color(0.2, 0.2, 1.0));
+	auto upper_orange = make_shared<lambertian>(color(1.0, 0.5, 0.0));
+	auto lower_teal   = make_shared<lambertian>(color(0.2, 0.8, 0.8));
+
+	// world.add(
+	// 	make_shared<quad>(point3(-3, -2, 5), vec3(0, 0., -4.), vec3(0., 4., 0.), left_red)
+	// );
+	// world.add(
+	// 	make_shared<quad>(point3(-2, -2, 5), vec3(4., 0., 0), vec3(0., 4., 0.), back_green)
+	// );
+	// world.add(
+	// 	make_shared<quad>(point3(-3, -2, 1), vec3(0, 0., 4.), vec3(0., 4., 0.), right_blue)
+	// );
+	// world.add(
+	// 	make_shared<quad>(point3(-2, 3, 1), vec3(4., 0., 0), vec3(0., 0., 4.), upper_orange)
+	// );
+	// world.add(
+	// 	make_shared<quad>(point3(-2, -3, 5), vec3(4., 0., 0), vec3(0., 0., -4), lower_teal)
+	// );
+
+    world.add(make_shared<quad>(point3(-3,-2, 5), vec3(0, 0,-4), vec3(0, 4, 0), left_red));
+    world.add(make_shared<quad>(point3(-2,-2, 0), vec3(4, 0, 0), vec3(0, 4, 0), back_green));
+    world.add(make_shared<quad>(point3( 3,-2, 1), vec3(0, 0, 4), vec3(0, 4, 0), right_blue));
+    world.add(make_shared<quad>(point3(-2, 3, 1), vec3(4, 0, 0), vec3(0, 0, 4), upper_orange));
+    world.add(make_shared<quad>(point3(-2,-3, 5), vec3(4, 0, 0), vec3(0, 0,-4), lower_teal));
+
+	Camera cam;
+	cam.aspect_ratio 	  = 16.0 / 9.0;
+	cam.image_width 	  = 400;
+	cam.samples_per_pixel = 100;
+	cam.max_depth 		  = 50;
+
+	cam.lookfrom 		  = point3(0, 0, 9);
+	cam.lookat 			  = point3(0, 0, 0);
+	// cam.vfov			  = deg_to_rad(20.0);
+	cam.vfov 			  = deg_to_rad(80.0);
+
+	cam.defocus_angle	  = deg_to_rad(0.);
+	cam.focus_dist 		  = 10.0;
+
+
+
+	cam.renderFast(world);
+}
+
 
 int main(){
-	switch (4){
-		case 1: bouncing_spheres();
-		case 2: textured_spheres();
-		case 3: earth();
-		case 4: perling_spheres();
+	switch (5){
+		case 1: bouncing_spheres(); break;
+		case 2: textured_spheres(); break;
+		case 3: earth(); break;
+		case 4: perling_spheres(); break;
+		case 5: quads(); break;
 	}
 }

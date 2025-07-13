@@ -3,7 +3,7 @@
 
 #include <istream>
 #include <ostream>
-#include <vec3.h>
+#include "vec3.h"
 
 class mat3 {
 private:
@@ -30,12 +30,14 @@ public:
         return (j + i * 3);
     }
 
-    void fill(double val){
+    void fill(double val)
+    {
         for (int i =0; i < 9; ++i)
             m[i] = val;
     }
 
-    mat3 operator+ (const mat3& other){
+    mat3 operator+ (const mat3& other) const
+    {
         mat3 sum{};
         for (int i =0; i < 9; ++i)
             sum[i] = m[i] + other[i];
@@ -43,7 +45,7 @@ public:
         return sum;
     }
 
-    mat3 operator* (const mat3& other)
+    mat3 operator* (const mat3& other) const
     {
         mat3 prod{};
         for (int i =0; i < 3; ++i) 
@@ -59,14 +61,14 @@ public:
         return prod;
     }
 
-    double det()
+    double det() const
     {
         return at(0, 0)*(at(1, 1) * at(2, 2) - at(2, 1) * at(1, 2))
               -at(0, 1)*(at(1, 0) * at(2, 2) - at(1, 2) * at(2, 0))
               +at(0, 2)*(at(1, 0) * at(2, 1) - at(2, 0) * at(1, 1) );
     }
 
-    double det_two_by_two(coord c1, coord c2, coord c3, coord c4)
+    double det_two_by_two(coord c1, coord c2, coord c3, coord c4) const 
     {
         auto &[i0, j0] = c1;
         auto &[i1, j1] = c2;
@@ -76,7 +78,7 @@ public:
         return at(i0, j0)*at(i2, j2) - at(i1, j1)*at(i3, j3);
     }
 
-    double determinant_at(size_t i, size_t j)
+    double determinant_at(size_t i, size_t j) const
     {
         bool inc_j = (j == 1);
         bool inc_i = (i == 1);
@@ -89,7 +91,7 @@ public:
         return determ;
     }
 
-    mat3 inv(){
+    mat3 inv() const {
         mat3 adjoint;
         for (int i =0; i < 3; ++i){
             for (int j =0; j < 3; ++j){
@@ -101,7 +103,8 @@ public:
         return adjoint;
     }
 
-    mat3 inverse(){
+    mat3 inverse() const
+    {
         //assumes non zero determinant!
         #define _det det_two_by_two
 
@@ -122,7 +125,7 @@ public:
     }
 
     [[nodiscard]]
-    mat3 operator/(double v)
+    mat3 operator/(double v) const
     {
         mat3 out;
         for (int i =0; i < 9; ++i)
@@ -138,8 +141,16 @@ public:
         return *this;
     }
 
+    mat3 operator-() const
+    {
+        mat3 mat;
+        for (int i =0; i < 9; ++i)
+            mat << -m[i];
+        return mat;
+    }
+
     [[nodiscard]]
-    mat3 operator*(double v)
+    mat3 operator*(double v) const
     {
         mat3 out;
         for (int i =0; i < 9; ++i)
@@ -156,7 +167,7 @@ public:
     }
 
     [[nodiscard]]
-    vec3 operator*(vec3 vec)
+    vec3 operator*(vec3 vec) const
     {
         vec3 out;
         for (int i =0; i < 3; ++i)
@@ -189,7 +200,7 @@ public:
     mat3& operator<< (const double &v)
     {
         m[_cur_ind] = v;
-        _cur_ind = (++_cur_ind) % 9;
+        _cur_ind = (_cur_ind + 1) % 9;
 
         return (*this);
     }
