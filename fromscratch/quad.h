@@ -51,7 +51,7 @@ public:
 
      if (std::abs(d) < 1e-8) return false;
 
-     vec3 p = m.inverse() * (r.origin() - q);
+     vec3 p = m.inv() * (r.origin() - q);
      double a = p[0],
             b = p[1],
             t = p[2];
