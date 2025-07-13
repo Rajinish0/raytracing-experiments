@@ -23,7 +23,6 @@ this is a 3x3 system of linear equation
 where x = [a b t] 
 
 Not optimized, the other quad2 is better
-could be optimzied using gaussian elimiation.
 */
 //maybe plane is a better name
 class quad : public hittable
@@ -59,19 +58,26 @@ public:
      double a = p[0],
             b = p[1],
             t = p[2];
-    
-    if (a < 0. || a > 1. || 
-        b < 0. || b > 1.) return false;
          
-    if (!ray_t.contains(t)) return false;
+    if (!ray_t.contains(t) || 
+        !is_interior(a, b, rec)) return false;
 
      rec.p = r.at(t);
      rec.t = t;
      rec.mat = mat;
      rec.set_front_face(r, normal);
-     rec.u = a;
-     rec.v = b;
      return true;
+    }
+
+    virtual bool is_interior(double a, double b, hit_record& rec) const
+    {
+        if (a < 0. || a > 1. || 
+            b < 0. || b > 1.) return false;
+
+        rec.u = a;
+        rec.v = b;
+
+        return true;
     }
 
     virtual void set_bounding_box() {

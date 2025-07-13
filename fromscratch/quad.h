@@ -1,4 +1,4 @@
-//#define USE_EXPERIMENTAL_QUAD
+// #define USE_EXPERIMENTAL_QUAD
 
 #ifdef USE_EXPERIMENTAL_QUAD
 #include "quad1.h"
