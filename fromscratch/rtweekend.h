@@ -30,6 +30,11 @@ inline int random_int(int min, int max){
 	return (int)random_double(min, max + 1);
 }
 
+template <typename T>
+T lerp(T a, T b, float p)
+{
+	return a + (b-a)*p;
+}
 
 #include "color.h"
 #include "interval.h"

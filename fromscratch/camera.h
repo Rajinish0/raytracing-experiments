@@ -10,6 +10,7 @@ public:
 	int	image_width = 400;
 	int samples_per_pixel = 10;
 	int max_depth = 10;
+	color background = color(.70, .80, 1.);
 
 	double vfov = pi / 2.0;
 	point3 lookfrom = point3(0.0);
@@ -220,24 +221,27 @@ private:
 		if (depth < 0)
 			return color(0.0);
 		hit_record rec;
-		if (world.hit(r, interval(0.001, infinity), rec)){
-			ray scattered;
-			color atten;
 
-			if (rec.mat->scatter(r, rec, atten, scattered))
-				return atten*ray_color(scattered, world, depth-1);
-			return color(0.0);
-			//vec3 dir = random_on_hemisphere(rec.normal);
-			//vec3 dir = rec.normal + random_unit_vector();
-			//return 0.5 * ray_color(ray(rec.p, dir), world, depth-1);
-			//return 0.5 * (rec.normal + color(1, 1, 1));
-		}
+		if (!world.hit(r, interval(0.001, infinity), rec))
+			return background;
 
-		vec3 unit = unit_vector(r.direction());
-		auto a = 0.5*(unit.y() + 1.0); // 0.5*([0.0, 2.0]) = [0.0, 1.0]
+		// if (world.hit(r, interval(0.001, infinity), rec)){
+		ray scattered;
+		color atten;
+		color color_from_emisson = rec.mat->emitted(rec.u, rec.v, rec.p);
+
+		if (!rec.mat->scatter(r, rec, atten, scattered))
+			return color_from_emisson;
+			
+		color color_from_scatter = atten * ray_color(scattered, world, depth-1);
+		return color_from_emisson + color_from_scatter;
+			// return color(0.0);
+
+		// vec3 unit = unit_vector(r.direction());
+		// auto a = 0.5*(unit.y() + 1.0); // 0.5*([0.0, 2.0]) = [0.0, 1.0]
 	
 		//lerp
-		return (1.0-a)*color(1.0) + a*color(0.5, 0.7, 1.0);
+		// return (1.0-a)*color(1.0) + a*color(0.5, 0.7, 1.0);
 
 	}
 
