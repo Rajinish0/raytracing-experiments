@@ -68,4 +68,16 @@ private:
     }
 };
 
+aabb operator+(const aabb& bbox, const vec3& v)
+{
+    return aabb(bbox.x + v.x(), 
+                bbox.y + v.y(),
+                bbox.z + v.z());
+}
+
+aabb operator+(const vec3& v, const aabb& bbox)
+{
+    return (bbox + v);
+}
+
 #endif

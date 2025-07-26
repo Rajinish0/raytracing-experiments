@@ -20,7 +20,7 @@ where r is ray origin and d is its direction
 Ax - dt = r - q
 this is a 3x3 system of linear equation
 [u v -d]x = r - q
-where x = [a b t] 
+where x = [a b t]
 
 Not optimized, the other quad2 is better
 */

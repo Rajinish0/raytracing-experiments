@@ -237,6 +237,57 @@ public:
         return (*this);
     }
 
+    static mat3 rot_x(double theta){
+        double c = std::cos(theta); 
+        double s = std::sin(theta);
+
+        mat3 m;
+        
+        m << 1 << 0 << 0 
+          << 0 << c << -s 
+          << 0 << s << c;
+
+        return m;
+    }
+
+    static mat3 rot_y(double theta){
+        double c = std::cos(theta); 
+        double s = std::sin(theta);
+
+        mat3 m;
+        
+        m << c << 0 << s 
+          << 0 << 1 << 0 
+          <<-s << 0 << c;
+
+        return m;
+    }
+
+    static mat3 rot_z(double theta)
+    {
+        double c = std::cos(theta); 
+        double s = std::sin(theta);
+
+        mat3 m;
+        
+        m << c << -s << 0 
+          << s <<  c << 0 
+          << 0 <<  0 << 1;
+
+        return m;
+    }
+
+    template<size_t axis>
+    std::enable_if_t<axis <= 2, mat3>
+    static rot(double theta)
+    {
+        switch (axis){
+            case 0:  return rot_x(theta);
+            case 1:  return rot_y(theta);
+            default: return rot_z(theta);
+        }
+    }
+
 private:
     size_t _cur_ind = 0;
 

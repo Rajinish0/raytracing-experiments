@@ -10,7 +10,7 @@ public:
 	int	image_width = 400;
 	int samples_per_pixel = 10;
 	int max_depth = 10;
-	color background = color(.70, .80, 1.);
+	color background;
 
 	double vfov = pi / 2.0;
 	point3 lookfrom = point3(0.0);
@@ -218,14 +218,13 @@ private:
 	}
 	
 	color ray_color(const ray& r, const hittable& world, int depth){
-		if (depth < 0)
+		if (depth <= 0)
 			return color(0.0);
 		hit_record rec;
 
 		if (!world.hit(r, interval(0.001, infinity), rec))
 			return background;
 
-		// if (world.hit(r, interval(0.001, infinity), rec)){
 		ray scattered;
 		color atten;
 		color color_from_emisson = rec.mat->emitted(rec.u, rec.v, rec.p);
@@ -235,14 +234,6 @@ private:
 			
 		color color_from_scatter = atten * ray_color(scattered, world, depth-1);
 		return color_from_emisson + color_from_scatter;
-			// return color(0.0);
-
-		// vec3 unit = unit_vector(r.direction());
-		// auto a = 0.5*(unit.y() + 1.0); // 0.5*([0.0, 2.0]) = [0.0, 1.0]
-	
-		//lerp
-		// return (1.0-a)*color(1.0) + a*color(0.5, 0.7, 1.0);
-
 	}
 
 	ray get_ray(int i, int j){

@@ -43,4 +43,13 @@ public:
 const interval interval::empty = interval(infinity, -infinity);
 const interval interval::universe = interval(-infinity, infinity);
 
+
+interval operator+ (const interval& itvl, double v){
+	return interval(itvl.min + v, itvl.max + v);
+}
+
+interval operator+ (double v, const interval& itvl){
+	return itvl + v;
+}
+
 #endif
